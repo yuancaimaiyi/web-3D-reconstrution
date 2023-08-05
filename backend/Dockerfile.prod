@@ -1,0 +1,55 @@
+FROM python:3.10
+
+# Create directory for the `app` user
+RUN mkdir -p /home/app
+
+# Create the `app` user
+RUN addgroup --system app && adduser --system app && adduser app app
+
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/backend
+RUN mkdir $APP_HOME
+# Docker Compose normally mounts named volumes as root.
+# And since we're using a non-root user,
+# we'll get a permission denied error when the `collectstatic` command is run if the directory does not already exist.
+# So we have to create the folder in the Dockerfile.
+RUN mkdir $APP_HOME/staticfiles
+RUN mkdir $APP_HOME/mediafiles
+
+# Set work directory
+WORKDIR $APP_HOME
+
+# Set environment variables
+# Don't generate .pyc files
+ENV PYTHONDONTWRITEBYTECODE=1
+# Don't bufferize an output
+ENV PYTHONUNBUFFERED=1
+
+# Download Meshroom, make in comments if you have it in local
+RUN wget https://github.com/alicevision/meshroom/releases/download/v2021.1.0/Meshroom-2021.1.0-linux-cuda10.tar.gz
+RUN tar --totals -xf Meshroom-2021.1.0-linux-cuda10.tar.gz
+RUN rm Meshroom-2021.1.0-linux-cuda10.tar.gz
+RUN mv Meshroom-2021.1.0-av2.4.0-centos7-cuda10.2 Meshroom
+
+# Install dependencies
+RUN pip install --upgrade pip
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+RUN apt update && apt install -y netcat
+RUN apt install -y dos2unix
+
+# Copy the project
+COPY . .
+
+# Delete all DOS symbols from entrypoint (if they exist)
+RUN dos2unix entrypoint.prod.sh
+RUN chmod +x $APP_HOME/entrypoint.prod.sh
+
+# chown all the files to the `app` user
+RUN chown -R app:app $APP_HOME
+
+# Change to the `app` user
+USER app
+
+# Run shell script
+ENTRYPOINT ["/home/app/backend/entrypoint.prod.sh"]

@@ -1,0 +1,14 @@
+#images-panel::-webkit-scrollbar {
+    width: 10px;
+    background-color: #f9f9fd;
+}
+
+#images-panel::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background-color: lightgray;
+}
+
+#images-panel::-webkit-scrollbar-track {
+    border-radius: 10px;
+    background-color: #f9f9fd;
+}

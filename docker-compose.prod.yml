@@ -1,0 +1,53 @@
+# For production
+
+version: "3.5"
+
+services:
+  db:
+    container_name: "3d_db"
+    image: postgres:14
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./.env.prod.db
+
+  backend:
+    container_name: "3d_backend"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    volumes:
+      - static_volume:/home/app/backend/staticfiles
+      - media_volume:/home/app/backend/mediafiles
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --timeout 2000 --workers 20
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - db
+
+  nginx:
+    container_name: "3d_nginx"
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/backend/staticfiles
+      - media_volume:/home/app/backend/mediafiles
+    ports:
+      - "8000:80"
+    depends_on:
+      - backend
+
+  frontend:
+    container_name: "3d_frontend"
+    restart: unless-stopped
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

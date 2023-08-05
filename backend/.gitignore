@@ -1,0 +1,16 @@
+# IDE folder
+.idea
+
+# Virtual environment
+venv
+
+# Meshroom's binary folder
+Meshroom
+
+# See MEDIA_ROOT in settings.py
+mediafiles
+
+# See STATIC_ROOT in settings.py
+staticfiles
+
+**/__pycache__/
