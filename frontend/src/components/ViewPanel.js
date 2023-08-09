@@ -256,6 +256,18 @@ class ViewPanel extends React.Component {
                 console.log(error);
             });
     }
+    // delete all images
+    handleDeleteAll = () => {
+        const imageIds = this.state.images.map(image => image.id);
+        imageIds.forEach(id => {
+            this.dbDispatcher.deleteImage(id);
+        });
+
+        this.setState({
+            images: [],
+            offset: 0
+        });
+    }
 
     render(){
         return (
@@ -286,7 +298,9 @@ class ViewPanel extends React.Component {
                     />
                 </Grid>
             </Grid>
-            <Container data-testid={'control-panel'} maxWidth={'xl'} sx={{
+
+
+            {/* <Container data-testid={'control-panel'} maxWidth={'xl'} sx={{
                 display: 'flex',
                 justifyContent: 'flex-start',
                 marginTop: 2,
@@ -297,7 +311,21 @@ class ViewPanel extends React.Component {
                         Upload
                     </Button>
                 </label>
+                <Button style={{marginLeft: '1em'}} onClick={this.handleStart} > Start </Button> */}
+
+            <Container data-testid={'control-panel'} maxWidth={'xl'} sx={{
+                display: 'flex',
+                 justifyContent: 'flex-start',
+                 marginTop: 2,
+                 marginBottom: 2
+             }}>
+                    <label htmlFor="raised-button-file">
+                    <Button variant="raised" component="span" >
+                        Upload
+                    </Button>
+                </label>
                 <Button style={{marginLeft: '1em'}} onClick={this.handleStart} > Start </Button>
+                <Button style={{marginLeft: '1em',color: 'red'}} onClick={this.handleDeleteAll} > Delete All </Button>
             </Container>
                 <CropWindow
                     isOpen={this.state.isCropOpen}
