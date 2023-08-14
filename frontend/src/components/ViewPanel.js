@@ -174,8 +174,18 @@ class ViewPanel extends React.Component {
                     images: prevState.images.concat(image)
                 };
             });
+            // Handle JSON files separately
+            const filenameParts = file.name.split('.');
+            const fileExtension = filenameParts[filenameParts.length - 1].toLowerCase();
+             if  (fileExtension === "json")  {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const jsonContent = JSON.parse(e.target.result);
+                    // Do something with the JSON content
+                };
+                reader.readAsText(file);
+             }
         });
-
         this.setState({
             offset: offset + Object.values(files).length
         })
@@ -274,11 +284,19 @@ class ViewPanel extends React.Component {
             <>
             <Grid data-testid={'view-panel'} container spacing={2}>
                 <Grid item xl={6} md={6} xs={12}>
-                    <Typography variant={'h4'}> Please, choose your images: </Typography>
-                    <input
+                    <Typography variant={'h4'}> images/images + json: </Typography>
+                    {/* <input
                         accept="image/*"
                         style={{ display: 'none' }}
                         id="raised-button-file"
+                        multiple
+                        type="file"
+                        onChange={this.handleUpload}
+                    /> */}
+                    <input
+                        accept="image/*, application/json"
+                        style={{ display: 'none' }}
+                         id="raised-button-file"
                         multiple
                         type="file"
                         onChange={this.handleUpload}

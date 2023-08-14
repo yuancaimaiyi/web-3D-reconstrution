@@ -32,7 +32,7 @@ class UploadView(APIView):
         dataset_serializer = DatasetSerializer(
             data={
                 'user': request.user.id,
-                'dataset_path': 'datasets/user_{}_{}'.format(request.user.id, text.slugify(timestamp)),
+                'dataset_path': 'datasets/{}_{}'.format(request.user.username, text.slugify(timestamp)),
                 'images_count': len(images),
                 'created_at': timestamp,
                 'status': 0,
@@ -48,10 +48,19 @@ class UploadView(APIView):
                     'dataset': dataset_instance.id,
                     'image': image
                 }
-                image_serializer = ImageSerializer(data=wrapped_image)
-                image_serializer.is_valid(raise_exception=True)
-                image_serializer.save()
-
+                if image.content_type.startswith('image/'):
+                    image_serializer = ImageSerializer(data=wrapped_image)
+                    image_serializer.is_valid(raise_exception=True)
+                    image_serializer.save()
+                elif image.content_type == 'application/json':
+                    json_content = image.read()
+                    img_path = settings.MEDIA_ROOT / dataset_instance.dataset_path
+                    json_filename = image.name
+                    json_path = os.path.join(img_path, json_filename)
+                    with open(json_path, 'wb') as json_file:
+                        json_file.write(json_content)
+                    # json_content_str = json_content.decode('utf-8') 
+                    # print(json_content_str)
         except serializers.ValidationError:
             Image.objects.filter(dataset=dataset_instance.id).delete()
             update = Dataset.objects.get(id=dataset_instance.id)
