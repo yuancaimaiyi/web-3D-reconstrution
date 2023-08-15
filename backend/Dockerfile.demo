@@ -1,0 +1,33 @@
+FROM python:3.10
+
+# Set work directory
+WORKDIR /app
+
+# Set environment variables
+# Don't generate .pyc files
+ENV PYTHONDONTWRITEBYTECODE=1
+# Don't bufferize an output
+ENV PYTHONUNBUFFERED=1
+
+# Download Meshroom, make in comments if you have it in local
+# RUN wget https://github.com/alicevision/meshroom/releases/download/v2021.1.0/Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN tar --totals -xf Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN rm Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN mv Meshroom-2021.1.0-av2.4.0-centos7-cuda10.2 Meshroom
+
+# Install dependencies
+RUN pip install --upgrade pip
+COPY requirements_demo.txt .
+RUN pip install  -i https://pypi.doubanio.com/simple/  -r requirements_demo.txt
+RUN apt update && apt install -y netcat-traditional
+RUN apt install -y dos2unix
+
+# Copy the project
+COPY . .
+
+# Delete all DOS symbols from entrypoint (if they exist)
+RUN dos2unix entrypoint.sh
+
+# Run shell script
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]

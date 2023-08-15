@@ -32,7 +32,7 @@ class UploadView(APIView):
         dataset_serializer = DatasetSerializer(
             data={
                 'user': request.user.id,
-                'dataset_path': 'datasets/{}_{}'.format(request.user.username, text.slugify(timestamp)),
+                'dataset_path': 'datasets/user_{}_{}'.format(request.user.id, text.slugify(timestamp)),
                 'images_count': len(images),
                 'created_at': timestamp,
                 'status': 0,

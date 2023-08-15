@@ -1,0 +1,132 @@
+# FROM python:3.10
+FROM nvidia/cuda:10.2-devel-ubuntu18.04
+MAINTAINER cheng.li wayz.ai
+ARG DEBIAN_FRONTEND=noninteractive
+# Prepare and empty machine for building
+RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak
+# RUN sed -i s:/archive.ubuntu.com:/mirrors.aliyun.com/ubuntu:g /etc/apt/sources.list
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+RUN sed -i s:/archive.ubuntu.com:/mirrors.tuna.tsinghua.edu.cn/ubuntu:g /etc/apt/sources.list
+RUN cat /etc/apt/sources.list
+RUN apt-get clean
+RUN apt-get -y update --fix-missing
+RUN apt-get update && apt-get install -y \
+    git \
+    cmake \
+    vim \
+    build-essential \
+    libboost-program-options-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libboost-test-dev \
+    libeigen3-dev \
+    libsuitesparse-dev \
+    libfreeimage-dev \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libglew-dev \
+    qtbase5-dev \
+    libqt5opengl5-dev \
+    libcgal-dev \
+    libcgal-qt5-dev \
+    libjsoncpp-dev  \
+    libxml2-dev  \
+    wget  
+# Igraph 
+COPY  igraph-0.7.1.tar.gz  .
+RUN tar -xvf  igraph-0.7.1.tar.gz
+RUN cd igraph-0.7.1 && \
+    ./configure && \
+    make && \
+    make check && \
+    make install
+# hera  
+# Run wget http://172.2.0.229:8080/job/hera.recorder/318/artifact/hera-release-v4.9.3-alpha.tar.gz
+COPY hera-release-v4.9.3-alpha.tar.gz  .
+RUN tar -xvf hera-release-v4.9.3-alpha.tar.gz 
+RUN cd hera-release-v4.9.3-alpha && \
+   ./install_artifacts.sh
+
+RUN apt-get -y install \
+    libatlas-base-dev \
+    libsuitesparse-dev 
+
+# install pip3,use python3
+RUN apt-get -y install python3-pip
+
+RUN git clone https://github.com/ceres-solver/ceres-solver.git --branch 1.14.0
+RUN cd ceres-solver && \
+	mkdir build && \
+	cd build && \
+	cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF && \
+	make -j4 && \
+	make install
+
+   # libturbojpeg must install 
+RUN apt-get install -yq libopencv-dev
+RUN apt-get -y install \
+     libboost-regex-dev \
+     libgtest-dev \
+     locate \
+     libturbojpeg
+RUN pip3 install --upgrade pip
+RUN cd /usr/src/gtest && mkdir build && cd  build && cmake .. && make
+RUN cp /usr/src/gtest/build/*.a /usr/lib
+
+RUN git clone  https://github.com/laurentkneip/opengv.git 
+RUN cd  opengv && \
+	mkdir build && \
+	cd build && \
+	cmake .. && \
+	make -j8  && \
+    make install
+COPY  yaml-cpp.tar  .
+RUN tar -xvf   yaml-cpp.tar 
+RUN cd yaml-cpp &&  \
+   rm -rf build && \
+	mkdir build && \
+	cd build && \
+	cmake .. && \
+	make -j8  && \
+    make install
+COPY rigid_manager.tar . 
+RUN tar -xvf rigid_manager.tar
+RUN cd   rigid_manager &&\
+   rm -rf build && \
+	mkdir build && \
+	cd build && \
+	cmake .. && \
+	make -j8  && \
+    make install
+# Set work directory
+WORKDIR /app
+
+# # Set environment variables
+# # Don't generate .pyc files
+# ENV PYTHONDONTWRITEBYTECODE=1
+# # Don't bufferize an output
+# ENV PYTHONUNBUFFERED=1
+
+# Download Meshroom, make in comments if you have it in local
+# RUN wget https://github.com/alicevision/meshroom/releases/download/v2021.1.0/Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN tar --totals -xf Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN rm Meshroom-2021.1.0-linux-cuda10.tar.gz
+# RUN mv Meshroom-2021.1.0-av2.4.0-centos7-cuda10.2 Meshroom
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip3 install  -i https://pypi.doubanio.com/simple/   -r requirements.txt
+RUN apt update && apt install -y netcat
+RUN apt install -y dos2unix
+
+# Copy the project
+COPY . .
+
+# Delete all DOS symbols from entrypoint (if they exist)
+RUN dos2unix entrypoint.sh
+
+# Run shell script
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
