@@ -27,7 +27,7 @@ class UploadView(APIView):
     def post(self, request, *args, **kwargs):
         # Convert QueryDict to Python's dict
         images = dict(request.data.lists())['images']
-
+        print(f"file number: {len(images)}\n")
         timestamp = timezone.now()
         dataset_serializer = DatasetSerializer(
             data={

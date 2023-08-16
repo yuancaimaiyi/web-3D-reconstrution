@@ -20,7 +20,7 @@ services:
     container_name: "3d_backend"
     build:
       context: ./backend
-      dockerfile: Dockerfile.demo
+      dockerfile: Dockerfile.vismap
     restart: unless-stopped
     command: python3 manage.py runserver 0.0.0.0:8000
     ports:

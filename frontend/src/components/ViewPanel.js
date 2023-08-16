@@ -284,7 +284,7 @@ class ViewPanel extends React.Component {
             <>
             <Grid data-testid={'view-panel'} container spacing={2}>
                 <Grid item xl={6} md={6} xs={12}>
-                    <Typography variant={'h4'}> images/images + json: </Typography>
+                    <Typography variant={'h4'}> File: </Typography>
                     {/* <input
                         accept="image/*"
                         style={{ display: 'none' }}
@@ -294,7 +294,7 @@ class ViewPanel extends React.Component {
                         onChange={this.handleUpload}
                     /> */}
                     <input
-                        accept="image/*, application/json"
+                        accept=".jpg, .png, .json"
                         style={{ display: 'none' }}
                          id="raised-button-file"
                         multiple

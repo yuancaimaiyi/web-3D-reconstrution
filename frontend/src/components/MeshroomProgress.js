@@ -170,7 +170,7 @@ class MeshroomProgress extends React.Component {
     render(){
         return (
             <>
-                <Typography variant="h4"> projects</Typography>
+                <Typography variant="h4"> Projects: </Typography>
                 <Paper elevation={6} style={{ maxHeight: '65vh', width: "100%", overflow: 'auto'}}>
                         <TableContainer>
                             <Table>

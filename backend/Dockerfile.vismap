@@ -103,11 +103,11 @@ RUN cd   rigid_manager &&\
 # Set work directory
 WORKDIR /app
 
-# # Set environment variables
-# # Don't generate .pyc files
-# ENV PYTHONDONTWRITEBYTECODE=1
-# # Don't bufferize an output
-# ENV PYTHONUNBUFFERED=1
+# Set environment variables
+# Don't generate .pyc files
+ENV PYTHONDONTWRITEBYTECODE=1
+# Don't bufferize an output
+ENV PYTHONUNBUFFERED=1
 
 # Download Meshroom, make in comments if you have it in local
 # RUN wget https://github.com/alicevision/meshroom/releases/download/v2021.1.0/Meshroom-2021.1.0-linux-cuda10.tar.gz
@@ -118,7 +118,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt .
 RUN pip3 install  -i https://pypi.doubanio.com/simple/   -r requirements.txt
-RUN apt update && apt install -y netcat
+RUN apt update && apt install -y  netcat-traditional
 RUN apt install -y dos2unix
 
 # Copy the project

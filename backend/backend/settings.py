@@ -141,6 +141,8 @@ MEDIA_ROOT = BASE_DIR / 'mediafiles'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# 设置单次上传数量 ，属于Django 配置
+DATA_UPLOAD_MAX_NUMBER_FILES = 20000
 
 # Рассказать Django о созданной нами кастомной модели пользователя. Строка
 # authentication.User сообщает Django, что мы ссылаемся на модель User в модуле
