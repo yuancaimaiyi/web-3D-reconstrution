@@ -126,6 +126,15 @@ COPY . .
 
 # Delete all DOS symbols from entrypoint (if they exist)
 RUN dos2unix entrypoint.sh
+RUN git clone https://cheng.li:lichenG123@git.aimap.io/wzautonomy/mortal/hera-vismap.git  --branch master
+RUN cd hera-vismap/vismap  && \
+	mkdir build && \
+	cd build && \
+	cmake .. && \
+	make -j4
+RUN cd  hera-vismap/script  && \
+git clone https://cheng.li:lichenG123@git.aimap.io/wzautonomy/vismap/featuremanage.git
+RUN cp -r /app/hera-vismap/vismap/build/src/exe/colmap /app
 
 # Run shell script
 RUN chmod +x /app/entrypoint.sh
