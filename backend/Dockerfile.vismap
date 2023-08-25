@@ -138,4 +138,5 @@ RUN cp -r /app/hera-vismap/vismap/build/src/exe/colmap /app
 
 # Run shell script
 RUN chmod +x /app/entrypoint.sh
+RUN cp /app/launch_vismap.py  /app/hera-vismap/script
 ENTRYPOINT ["/app/entrypoint.sh"]

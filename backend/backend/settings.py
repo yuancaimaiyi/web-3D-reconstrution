@@ -159,3 +159,5 @@ REST_FRAMEWORK = {
 }
 
 CORS_ORIGIN_ALLOW_ALL = os.environ.get("DJANGO_CORS_ORIGIN_ALLOW_ALL", default='True') == 'True'
+FSBA  =  os.environ.get("FSBA")
+PURE_VISION = os.environ.get("PURE_VISION")

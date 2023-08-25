@@ -14,7 +14,7 @@ then
 fi
 
 # python3 manage.py flush --no-input
-# python3 manage.py migrate --noinput
+python3 manage.py migrate --noinput
 
 # "Do everything in this .sh script, then in the same shell run the command the user passes in on the command line"
 exec "$@"
