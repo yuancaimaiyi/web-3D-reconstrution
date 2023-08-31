@@ -13,8 +13,7 @@ import zipfile
 import shutil
 from io import BytesIO
 from pathlib import Path
-
-
+from .visualize_model import Model
 class UploadView(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
@@ -278,6 +277,7 @@ class StatusView(APIView):
 
             if dataset_instance[i].comment == 'Complete':
                 project['Download_url'] = "http://localhost:8000/upload/download/?project=user_{}_{}".format(request.user.id, text.slugify(dataset_instance[i].created_at))
+                project['View_url'] = "http://localhost:8000/upload/view/?project=user_{}_{}".format(request.user.id, text.slugify(dataset_instance[i].created_at))
 
             if dataset_instance[i].comment != 'Waiting' and dataset_instance[i].comment != 'In progress':
                 project['Is_removable'] = True
@@ -288,6 +288,43 @@ class StatusView(APIView):
         response = {'projects': projects}
 
         return JsonResponse(response, status=status.HTTP_200_OK)
+class ViewView(APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
+    def get(self, request, *args, **kwargs):
+
+        project = request.GET.get('project', '')
+        # If key 'project' doesn't exist
+        if project == '':
+            return Response('Bad Request', status=status.HTTP_400_BAD_REQUEST)
+
+        project_info = project.split("_")
+
+        # If user in 'project' doesn't match with user in authorization key
+        if len(project_info) != 3 or project_info[0] != 'user' or project_info[1] != str(request.user.id):
+            return Response('Wrong user', status=status.HTTP_403_FORBIDDEN)
+
+        dataset_instance = Dataset.objects.filter(user=request.user.id).filter(dataset_path="datasets/" + project)
+
+        # If there is no 'project' in DB
+        if not dataset_instance:
+            return Response('Result file was not found', status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            sparse_model  = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm",'map','sparse_model')
+            print(f'sparse model : {sparse_model}\n')
+            model = Model()
+            model.read_model(sparse_model)
+            print("num_cameras:", len(model.cameras))
+            print("num_images:", len(model.images))
+            print("num_points3D:", len(model.points3D))
+            # display using Open3D visualization tools
+            model.create_window()
+            model.add_points()
+            model.add_cameras(scale=0.25)
+            model.show()
+        except FileNotFoundError:
+            return Response('sparse model  file was not found', status=status.HTTP_404_NOT_FOUND)
 class DownloadView(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
@@ -326,7 +363,7 @@ class DownloadView(APIView):
             #         zip_filepath = os.path.join(zip_subdir, filename)
             #         zip_file.write(filepath, zip_filepath)
             folder_to_compress = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm")
-            print(f'compess sfm folder {folder_to_compress} \n ')
+            print(f'compess sfm folder :  {folder_to_compress} \n ')
             if not os.path.exists(folder_to_compress):
                 return Response("Project sfm folder not found",status=status.HTTP_404_NOT_FOUND)
             with zipfile.ZipFile('sfm.zip', 'w') as zip_file:

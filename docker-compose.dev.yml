@@ -30,7 +30,11 @@ services:
     shm_size: '2gb'
     depends_on:
       - db
-
+    environment:
+      - QT_XCB_GL_INTEGRATION=xcb_egl
+      - DISPLAY=:0
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
   frontend:
     container_name: "3d_frontend"
     restart: unless-stopped

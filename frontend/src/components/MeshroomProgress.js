@@ -8,11 +8,13 @@ import {
     TableHead,
     TablePagination,
     TableRow,
-    Typography
+    Typography,
+    IconButton
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { withStyles } from '@material-ui/core/styles';
 import GetAppIcon from '@material-ui/icons/GetApp';
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import store from "../store/store";
 import axios from "axios";
 
@@ -117,16 +119,34 @@ class MeshroomProgress extends React.Component {
             });
     }
 
+     // 添加viewResult方法
+    viewResult = (viewUrl) =>{
+        const config = {
+            headers: {
+                'authorization': 'Bearer ' + store.getState().token
+            },
+            responseType: 'blob'
+        }
+        axios.get(viewUrl,config)
+             .then((response) => {
+            console.log(response.data);
+        })
+        .catch((err) => {
+            console.log(err);
+            alert("Failed to initiate visualization.");
+        });
+    }
+
     isRemovable(row){
         if(row.isRemovable){
             const removeURL = row.removeURL;
             return (
                 <TableCell>
-                    <a onClick={() => {
+                    <IconButton onClick={() => {
                         this.removeResult(removeURL);
                     }} download>
-                        <DeleteIcon />
-                    </a>
+                        <DeleteIcon style={{ fontSize: 24, color: 'red' }}/>
+                    </IconButton>
                 </TableCell>
             );
         }
@@ -136,14 +156,22 @@ class MeshroomProgress extends React.Component {
     isDownloadable(row){
         if(row.status === 100){
             const downloadUrl = row.downloadURL;
+            const viewUrl = row.viewURL;
+            console.log(viewUrl);
+            console.log(downloadUrl);
             const fileName = `Dataset: ${row.datasets}`;
             return (
                 <TableCell>
-                    <a onClick={() => {
+                    <IconButton onClick={() => {
                         this.downloadResult(downloadUrl, fileName);
                     }} download>
-                        <GetAppIcon/>
-                    </a>
+                        <GetAppIcon style={{ fontSize: 24, color: 'green' }}/>
+                    </IconButton>
+                    <IconButton onClick={() => {
+                         this.viewResult(viewUrl);
+                    }} download>
+                        <VisibilityIcon  style={{ fontSize: 24, color: 'blue' }}/>
+                    </IconButton>
                 </TableCell>
             )
         }

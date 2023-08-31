@@ -210,7 +210,8 @@ class ViewPanel extends React.Component {
                 message: item["Comment"],
                 downloadURL: item["Download_url"] ?? null,
                 removeURL: item['Remove_url'] ?? null,
-                isRemovable: !!item['Is_removable']
+                isRemovable: !!item['Is_removable'],
+                viewURL: item['View_url']?? null
             }
         })
     }
@@ -313,6 +314,7 @@ class ViewPanel extends React.Component {
                     <MeshroomProgress
                         rows={this.state.projects}
                         handleStatus={this.handleStatus}
+                        
                     />
                 </Grid>
             </Grid>
