@@ -13,7 +13,10 @@ import zipfile
 import shutil
 from io import BytesIO
 from pathlib import Path
-from .visualize_model import Model
+# from .visualize_model import Model
+import subprocess
+import socket
+import time
 class UploadView(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
@@ -291,8 +294,11 @@ class StatusView(APIView):
 class ViewView(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
+    def __init__(self):
+        super().__init__()
+        self.get_request_counter = 0  # Initialize a counter for get requests
     def get(self, request, *args, **kwargs):
-
+        self.get_request_counter += 1
         project = request.GET.get('project', '')
         # If key 'project' doesn't exist
         if project == '':
@@ -312,17 +318,41 @@ class ViewView(APIView):
 
         try:
             sparse_model  = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm",'map','sparse_model')
+            reconstruction_json =  Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm",'map')
             print(f'sparse model : {sparse_model}\n')
-            model = Model()
-            model.read_model(sparse_model)
-            print("num_cameras:", len(model.cameras))
-            print("num_images:", len(model.images))
-            print("num_points3D:", len(model.points3D))
+            # model = Model()
+            # model.read_model(sparse_model)
+            # print("num_cameras:", len(model.cameras))
+            # print("num_images:", len(model.images))
+            # print("num_points3D:", len(model.points3D))
+            initPort = 8085
+            flask_command = [
+                'python3', '/app/viewer/server.py', '-d', str(reconstruction_json) ,  '-p',  str(initPort + self.get_request_counter) 
+            ]
+            subprocess.Popen(flask_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(3)
+            print(f'Flask server started: {reconstruction_json}\n')
+            host_ip = socket.gethostbyname(socket.gethostname())
+            frontend_url =  f"http://{host_ip}:{initPort + self.get_request_counter}"
+            print(f'viewer url : {frontend_url}\n') 
+            return JsonResponse({'frontend_url': frontend_url})
+
+            # python3_result_code = os.system('python3 -V')
+            # if python3_result_code == 0:
+            #     python_version = 'python3'
+            # else:
+            #     python_version = 'python'
+            # initPort = 8085
+            # result = os.system(python_version + ' /app/viewer/server.py   -d  {}   -p  {}'.format(reconstruction_json, initPort + self.get_request_counter ))       
+            # if result == 0 :
+            #     print(f'viewer  path : {reconstruction_json}\n')
+            #     webbrowser.open("http://localhost:8085")
+            #     pass   
             # display using Open3D visualization tools
-            model.create_window()
-            model.add_points()
-            model.add_cameras(scale=0.25)
-            model.show()
+            # model.create_window()
+            # model.add_points()
+            # model.add_cameras(scale=0.25)
+            # model.show()
         except FileNotFoundError:
             return Response('sparse model  file was not found', status=status.HTTP_404_NOT_FOUND)
 class DownloadView(APIView):

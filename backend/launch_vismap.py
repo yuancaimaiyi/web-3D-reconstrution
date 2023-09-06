@@ -18,6 +18,7 @@ import re
 from read_write_model import read_model
 from tqdm import tqdm
 from featuremanage import retrieval_pairs
+from convertSfM import convert
 class VisMap:
     def __init__(self,images_path,fsba,pure_vision):
         ###########params
@@ -237,6 +238,9 @@ class VisMap:
         for file in os.listdir(os.path.join(self.tmp,"0")):
             shutil.copy(os.path.join(os.path.join(self.tmp,"0"),file),os.path.join(self.sparse_model,file))
         self.log.log("... {} sfm complete ({} sec)".format(map_mode, timer.read()))
+        convert(self.sparse_model,self.map/"reconstruction.json")
+        print("convert colmap to json done ! \n")
+
 images_path =  sys.argv[1]
 fsba =  sys.argv[2]
 pure_vision =  sys.argv[3]

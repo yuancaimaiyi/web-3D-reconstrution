@@ -125,12 +125,22 @@ class MeshroomProgress extends React.Component {
             headers: {
                 'authorization': 'Bearer ' + store.getState().token
             },
-            responseType: 'blob'
+            responseType: 'json'
         }
         axios.get(viewUrl,config)
              .then((response) => {
-            console.log(response.data);
-        })
+            
+            console.log('Response data:', response.data);
+            const frontendUrl = response.data.frontend_url;
+            if (frontendUrl) {
+                // 使用 JavaScript 来执行跳转
+                // window.location.href =  frontendUrl // 在浏览器中执行跳转
+                window.open(frontendUrl, '_blank');  // 新页面
+            } else {
+                // 如果没有收到有效的 frontend_url，可以显示错误消息或采取其他操作
+                alert("Failed to get correct  viewer url.");
+            }
+        }) 
         .catch((err) => {
             console.log(err);
             alert("Failed to initiate visualization.");

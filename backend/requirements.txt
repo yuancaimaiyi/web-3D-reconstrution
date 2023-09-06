@@ -31,4 +31,6 @@ matplotlib
 scipy
 h5py
 opencv-python==3.4.9.31
-open3d
+# open3d
+flask 
+pyquaternion
