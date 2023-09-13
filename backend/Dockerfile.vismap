@@ -1,5 +1,5 @@
 # FROM python:3.10
-FROM nvidia/cuda:10.2-devel-ubuntu18.04
+FROM nvidia/cuda:11.3.1-devel-ubuntu20.04
 MAINTAINER cheng.li wayz.ai
 ARG DEBIAN_FRONTEND=noninteractive
 # Prepare and empty machine for building
@@ -42,12 +42,7 @@ RUN cd igraph-0.7.1 && \
     make && \
     make check && \
     make install
-# hera  
-# Run wget http://172.2.0.229:8080/job/hera.recorder/318/artifact/hera-release-v4.9.3-alpha.tar.gz
-COPY hera-release-v4.9.3-alpha.tar.gz  .
-RUN tar -xvf hera-release-v4.9.3-alpha.tar.gz 
-RUN cd hera-release-v4.9.3-alpha && \
-   ./install_artifacts.sh
+
 
 RUN apt-get -y install \
     libatlas-base-dev \
@@ -71,9 +66,9 @@ RUN apt-get -y install \
      libgtest-dev \
      locate \
      libturbojpeg
-RUN pip3 install --upgrade pip
-RUN cd /usr/src/gtest && mkdir build && cd  build && cmake .. && make
-RUN cp /usr/src/gtest/build/*.a /usr/lib
+RUN pip3 install --upgrade pip  --index-url=https://pypi.tuna.tsinghua.edu.cn/simple
+# RUN cd /usr/src/gtest && mkdir build && cd  build && cmake .. && make
+# RUN cp /usr/src/gtest/build/*.a /usr/lib
 
 RUN git clone  https://github.com/laurentkneip/opengv.git 
 RUN cd  opengv && \
@@ -117,25 +112,31 @@ ENV PYTHONUNBUFFERED=1
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip3 install  -r requirements.txt  --index-url=https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install   --ignore-installed   -r requirements.txt  --index-url=https://pypi.tuna.tsinghua.edu.cn/simple
 RUN apt update && apt install -y  netcat-traditional
 RUN apt install -y dos2unix
 RUN apt install curl
 
 # Copy the project
 COPY . .
-RUN cd  viewer && \
-        chmod +x  node_modules.sh &&  \
-        ./node_modules.sh
-
-# Delete all DOS symbols from entrypoint (if they exist)
-RUN dos2unix entrypoint.sh
+# hera  
+# # Run wget http://172.2.0.229:8080/job/hera.recorder/318/artifact/hera-release-v4.9.3-alpha.tar.gz
+# COPY hera-release-v4.9.3-alpha.tar.gz  .
+RUN tar -xvf hera-release-v4.9.3-alpha.tar.gz 
+RUN cd hera-release-v4.9.3-alpha && \
+   ./install_artifacts.sh
 RUN git clone https://cheng.li:lichenG123@git.aimap.io/wzautonomy/mortal/hera-vismap.git  --branch master
 RUN cd hera-vismap/vismap  && \
 	mkdir build && \
 	cd build && \
 	cmake .. && \
 	make -j4
+
+RUN cd  viewer && \
+        chmod +x  node_modules.sh &&  \
+        ./node_modules.sh
+# Delete all DOS symbols from entrypoint (if they exist)
+RUN dos2unix entrypoint.sh
 RUN cd  hera-vismap/script  && \
 git clone https://cheng.li:lichenG123@git.aimap.io/wzautonomy/vismap/featuremanage.git
 RUN cp -r /app/hera-vismap/vismap/build/src/exe/colmap /app
