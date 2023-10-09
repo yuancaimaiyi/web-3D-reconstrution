@@ -84,11 +84,27 @@ class UploadView(APIView):
             python_version = 'python3'
         else:
             python_version = 'python'
-        result_code = os.system(python_version + ' /app/hera-vismap/script/launch_vismap.py \
-                                  {} \
-                                  {} \
-                                   {}'.format(img_path,settings.FSBA,settings.PURE_VISION))
-
+        fileNum  =  len(os.listdir(img_path))
+        imageNum = 0
+        for file in os.listdir(img_path):
+             if file.endswith("jpg") or file.endswith("png"):
+                 imageNum += 1
+        if fileNum != imageNum:
+            print("3D scanner  app  file....\n")
+            print(f'fsba : {settings.FSBA}, vision: {settings.PURE_VISION}\n')
+            print("Run launch_vismap.py \n")
+            result_code = os.system(python_version + ' /app/hera-vismap/script/launch_vismap.py \
+                                    {} \
+                                    {} \
+                                    {}'.format(img_path,settings.FSBA,settings.PURE_VISION))
+        else:
+            print("Only  images file ....\n")
+            print(f'fsba : {settings.FSBA}, vision: {settings.PURE_VISION}\n')
+            print("Run launch_vismap_images.py\n")
+            result_code = os.system(python_version + ' /app/hera-vismap/script/launch_vismap_images.py \
+                                    {} \
+                                    {} \
+                                    {}'.format(img_path,settings.FSBA,settings.PURE_VISION))           
         if  result_code == 0:
             try:
                 user_folder = 'user_{}_{}'.format(request.user.id, text.slugify(timestamp))
@@ -330,7 +346,7 @@ class ViewView(APIView):
                 'python3', '/app/viewer/server.py', '-d', str(reconstruction_json) ,  '-p',  str(initPort + self.get_request_counter) 
             ]
             subprocess.Popen(flask_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            time.sleep(3)
+            time.sleep(1)
             print(f'Flask server started: {reconstruction_json}\n')
             host_ip = socket.gethostbyname(socket.gethostname())
             frontend_url =  f"http://{host_ip}:{initPort + self.get_request_counter}"

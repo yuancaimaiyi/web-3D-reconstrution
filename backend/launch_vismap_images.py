@@ -38,11 +38,11 @@ class VisMap:
         self.database_path = self.map / 'database.db'
         self.GPU_IDX = 0
         self.multi_model = 0
-        self.refine_focal = 0
+        self.refine_focal = 1
         self.refine_principal = 0
-        self.refine_distorted = 0
+        self.refine_distorted = 1
         self.gba_iterations = 30
-        self.gba_refinements = 1
+        self.gba_refinements = 5
         self.resection_min_inliners =  30
         self.init_max_forward_motion = 1.0
         self.init_max_error = 4
@@ -60,23 +60,9 @@ class VisMap:
         self.num_images_ub = 500
         self.completeness_ratio = 0.8
         self.cluster_type = "NCUT"
-        frame_regex = "frame"
         self.images_num = 0
-        self.image_usage_path = self.dir /f'{self.folder_name}_images'
-        os.makedirs(self.image_usage_path,exist_ok=True)
-        self.calibration_path =  self.dir/f'{self.folder_name}_calibration'
-        os.makedirs(self.calibration_path,exist_ok=True)
         for file in tqdm(os.listdir(self.images_path)):
-            if file.endswith("jpg"):
-                if frame_regex not in file:
-                    continue
-                json_file = file.split(".")[0] + ".json"
-                shutil.copy(os.path.join(self.images_path,file),os.path.join(self.image_usage_path,file))
-                if  os.path.exists(os.path.join(self.images_path,json_file)):
-                    shutil.copy(os.path.join(self.images_path, json_file), os.path.join(self.calibration_path, json_file))
-                else:
-                    print("The {} 's json file not exit....\n".format(file))
-                    # sys.exit(1)
+            if file.endswith("jpg") or file.endswith("png"):
                 self.images_num += 1
         print(f'#### params: \n')
         print(f'images num:{self.images_num}\n')
@@ -117,9 +103,8 @@ class VisMap:
         timer = Timer()
         sp.call(["{}".format(self.vismap_path), "{}".format("feature_extractor"),
                  "--database_path","{}".format(self.database_path),
-                 "--image_path","{}".format(self.image_usage_path),
+                 "--image_path","{}".format(self.images_path),
                  "--type","{}".format(0),
-                 "--ImageReader.camera_model","PINHOLE",
                  "--SiftExtraction.gpu_index","{}".format(self.GPU_IDX)])
         self.log.log("...feature extracting complete ({} sec)".format(timer.read()))
     def image_retrieval(self):
@@ -131,7 +116,7 @@ class VisMap:
     def feature_matching(self):
         if self.images_num > 50:
             timer = Timer()
-            retrieval_pairs.retrieval_pairs(self.image_usage_path, self.map)
+            retrieval_pairs.retrieval_pairs(self.images_path, self.map)
             
             if not os.path.exists(os.path.join(self.map,'global-feats-netvlad.txt')):
                 print("retrieval's pairs not exit.....................")
@@ -144,51 +129,22 @@ class VisMap:
             self.log.log("...netvlad feature matching complete ({} sec)".format(timer.read()))
         else:
             timer = Timer()
-            sp.call(["{}".format(self.vismap_path), "{}".format("sequential_matcher"),
+            sp.call(["{}".format(self.vismap_path), "{}".format("exhaustive_matcher"),
                     "--database_path","{}".format(self.database_path),
                     "--SiftMatching.guided_matching", "{}".format(1),
                     "--SiftMatching.gpu_index","{}".format(self.GPU_IDX)])
             self.log.log("...sequential feature matching complete ({} sec)".format(timer.read()))           
     def array_to_blob(self,array):
         return array.tobytes()
-    def modify_database(self):
-        timer = Timer()
-        names_intrisic = {}
-        names_position = {}
-        for js in tqdm(os.listdir(self.calibration_path)):
-            image_name = js.split(".")[0] + ".jpg"
-            with open(os.path.join(self.calibration_path,js), 'r') as jss:
-                json_data = json.load(jss)
-                names_intrisic[image_name] = [json_data['intrinsics'][0],
-                                              json_data['intrinsics'][4],json_data['intrinsics'][2],json_data['intrinsics'][5]]
-                scan_pose = np.array(json_data['cameraPoseARFrame']).reshape(-1, 4)
-                scan_postion = scan_pose[:,-1][:-1]
-                names_position[image_name] = scan_postion
-        db = sqlite3.connect(str(self.database_path))
-        value = db.execute("SELECT name ,camera_id FROM IMAGES")
-        file = open(os.path.join(self.map,"position.txt"),"w+")
-        for n ,c in value:
-            if n in names_intrisic.keys() :
-                # print(f'find {n} in database...\n')
-                params = np.asarray(names_intrisic[n], np.float64)
-                params = self.array_to_blob(params)
-                sql = "update cameras set params = ? ,prior_focal_length = ?  where camera_id = ?"
-                db.execute(sql, (sqlite3.Binary(params), 1,c))
-                sql_ = "update images set prior_tx = ? ,prior_ty = ?,prior_tz = ?  where camera_id = ?"
-                file.writelines(f'{n} , {names_position[n][0]} , {names_position[n][1]} , {names_position[n][2]}\n')
-                db.execute(sql_, (names_position[n][0],names_position[n][1],names_position[n][2],c))
-        db.commit()
-        file.close()
-        self.log.log("...write json to database  complete ({} sec)".format(timer.read()))
     def mapper(self):
         timer = Timer()
-        if  self.total_num < 500 :
+        if  self.total_num < 500 :  
             self.num_images_ub = self.total_num
         map_mode = "distributed_mapper"
         sp.call(["{}".format(self.vismap_path), "{}".format(map_mode),
                 "{}".format(self.tmp),
                 "--database_path", "{}".format(self.database_path),
-                "--image_path","{}".format(self.image_usage_path),
+                "--image_path","{}".format(self.images_path),
                 "--output_path", "{}".format(self.tmp),
                 "--assign_cluster_id","{}".format(self.assign_cluster_id),
                 "--write_binary","{}".format(self.write_binary),
@@ -230,8 +186,6 @@ fsba =  sys.argv[2]
 pure_vision =  sys.argv[3]
 vismap= VisMap(images_path , fsba , pure_vision )
 vismap.feature_extractor()
-# # vismap.image_retrieval()
-vismap.modify_database()
 vismap.feature_matching()
 vismap.dataInfo()
 vismap.mapper()
