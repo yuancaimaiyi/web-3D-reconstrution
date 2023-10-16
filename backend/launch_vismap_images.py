@@ -19,6 +19,8 @@ from read_write_model import read_model
 from tqdm import tqdm
 from featuremanage import retrieval_pairs
 from convertSfM import convert
+import piexif
+from PIL import Image
 class VisMap:
     def __init__(self,images_path,fsba,pure_vision):
         ###########params
@@ -61,9 +63,17 @@ class VisMap:
         self.completeness_ratio = 0.8
         self.cluster_type = "NCUT"
         self.images_num = 0
+        self.gpsInfoNum = 0
         for file in tqdm(os.listdir(self.images_path)):
             if file.endswith("jpg") or file.endswith("png"):
+                img = Image.open(os.path.join(self.images_path,file))
+                exif_dict = piexif.load(img.info['exif'])
+                gpsInfo = exif_dict['GPS']
+                if len(gpsInfo) !=0:
+                    self.gpsInfoNum += 1
                 self.images_num += 1
+        if self.gpsInfoNum == 0 :
+            self.pure_vision = 'true'
         print(f'#### params: \n')
         print(f'images num:{self.images_num}\n')
         print(f'cluster num: {self.num_images_ub}\n')
