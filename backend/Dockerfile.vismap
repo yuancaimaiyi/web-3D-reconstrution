@@ -145,4 +145,6 @@ RUN cp -r /app/hera-vismap/vismap/build/src/exe/colmap /app
 RUN chmod +x /app/entrypoint.sh
 RUN cp /app/launch_vismap.py  /app/hera-vismap/script
 RUN cp /app/launch_vismap_images.py  /app/hera-vismap/script
+# install original colmap .because use it's point triangulate 
+RUN apt install  -y  colmap
 ENTRYPOINT ["/app/entrypoint.sh"]

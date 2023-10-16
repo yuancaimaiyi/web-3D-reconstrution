@@ -79,6 +79,10 @@ class UploadView(APIView):
             update.save()
 
         img_path = settings.MEDIA_ROOT / dataset_instance.dataset_path
+        # print("=======================================\n")
+        # print(settings.MEDIA_ROOT )
+        # print(dataset_instance.dataset_path)
+        # print("=======================================\n")
         python3_result_code = os.system('python3 -V')
         if python3_result_code == 0:
             python_version = 'python3'
@@ -93,19 +97,42 @@ class UploadView(APIView):
             print("3D scanner  app  file....\n")
             print(f'fsba : {settings.FSBA}, vision: {settings.PURE_VISION}\n')
             print("Run launch_vismap.py \n")
-            result_code = os.system(python_version + ' /app/hera-vismap/script/launch_vismap.py \
+            sfm = os.system(python_version + ' /app/hera-vismap/script/launch_vismap.py \
                                     {} \
                                     {} \
                                     {}'.format(img_path,settings.FSBA,settings.PURE_VISION))
+            print("vismap sfm finished......\n")
+            print("===============================\n")
+            print("Begin learned-feature map building......\n")
+            postprocess_sfm = os.system(python_version + "  /app/hera-vismap/script/featuremanage/preprocess_images.py \
+                                        --assets_path {}     --ext {}".format(os.path.join(settings.MEDIA_ROOT,dataset_instance.dataset_path.split("/")[0]) , 
+                                                                            dataset_instance.dataset_path.split("/")[-1]))
+            
+            build_scene = os.system(python_version + "  /app/hera-vismap/script/featuremanage/build_scene_images.py \
+                                        --assets_path {}     --ext {}".format(os.path.join(settings.MEDIA_ROOT,dataset_instance.dataset_path.split("/")[0]) , 
+                                                                            dataset_instance.dataset_path.split("/")[-1]))
+            print("vismap long-term map building finished ......\n")
+            
         else:
             print("Only  images file ....\n")
             print(f'fsba : {settings.FSBA}, vision: {settings.PURE_VISION}\n')
-            print("Run launch_vismap_images.py\n")
-            result_code = os.system(python_version + ' /app/hera-vismap/script/launch_vismap_images.py \
+            print("Run launch_vismap_images.py\n")      
+            sfm = os.system(python_version + ' /app/hera-vismap/script/launch_vismap_images.py\
                                     {} \
                                     {} \
-                                    {}'.format(img_path,settings.FSBA,settings.PURE_VISION))           
-        if  result_code == 0:
+                                    {}'.format(img_path,settings.FSBA,settings.PURE_VISION))
+            print("vismap sfm finished......\n")
+            print("===============================\n")
+            print("Begin learned-feature map building......\n")
+            postprocess_sfm = os.system(python_version + "  /app/hera-vismap/script/featuremanage/preprocess_images.py \
+                                        --assets_path {}     --ext {}".format(os.path.join(settings.MEDIA_ROOT,dataset_instance.dataset_path.split("/")[0]) , 
+                                                                            dataset_instance.dataset_path.split("/")[-1]))
+            
+            build_scene = os.system(python_version + "  /app/hera-vismap/script/featuremanage/build_scene_images.py \
+                                       --assets_path {}     --ext {}".format(os.path.join(settings.MEDIA_ROOT,dataset_instance.dataset_path.split("/")[0]) , 
+                                                                            dataset_instance.dataset_path.split("/")[-1]))
+            print("vismap long-term map building finished ......\n")        
+        if  build_scene ==0 :
             try:
                 user_folder = 'user_{}_{}'.format(request.user.id, text.slugify(timestamp))
 
@@ -113,7 +140,7 @@ class UploadView(APIView):
                 #     'obj': '/media/datasets/' + user_folder + '/result/texturedMesh.obj',
                 #     'png': '/media/datasets/' + user_folder + '/result/texture_1001.png'
                 # }
-                response ={ 'sfm': f'{settings.MEDIA_ROOT }/ "datasets"/{user_folder}_sfm'}
+                response ={ 'sfm': f'{settings.MEDIA_ROOT }/ "datasets"/{user_folder}_6dof'}
 
                 # with open(Path.joinpath(img_path, 'result', 'texturedMesh.obj'), "r") as f:
                 #     response['obj'] = f.read()
@@ -269,9 +296,13 @@ class StatusView(APIView):
             try:
                 img_path = settings.MEDIA_ROOT / dataset_instance[i].dataset_path
                 sparse_model  =  Path(str(img_path) + '_sfm') / 'map' / 'sparse_model'
-                print (sparse_model)
+                print (f'sfm result path :{sparse_model}\n')
                 print("\n")
-                if 'images.txt' in os.listdir(sparse_model) or 'images.bin' in os.listdir(sparse_model):
+                ar_model  =  Path(str(img_path) + '_6dof') / 'sfm_superpoint+superglue' / 'model'
+                os.makedirs(ar_model, exist_ok=True)
+                print (f'AR map  path :{ar_model}\n')
+                print("\n")
+                if  'images.txt' in os.listdir(ar_model) or 'images.bin' in os.listdir(ar_model) :
                     update = Dataset.objects.get(id=dataset_instance[i].id)
                     if update:
                         update.status = complete_status
@@ -408,7 +439,7 @@ class DownloadView(APIView):
             #         filepath = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project, 'result', filename)
             #         zip_filepath = os.path.join(zip_subdir, filename)
             #         zip_file.write(filepath, zip_filepath)
-            folder_to_compress = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm")
+            folder_to_compress = Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_6dof")
             print(f'compess sfm folder :  {folder_to_compress} \n ')
             if not os.path.exists(folder_to_compress):
                 return Response("Project sfm folder not found",status=status.HTTP_404_NOT_FOUND)
@@ -462,6 +493,7 @@ class RemoveView(APIView):
         shutil.rmtree(Path.joinpath(settings.MEDIA_ROOT, 'datasets', project + "_calibration"), ignore_errors=True)
         shutil.rmtree(Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_images"), ignore_errors=True)
         shutil.rmtree(Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_sfm"), ignore_errors=True)
+        shutil.rmtree(Path.joinpath(settings.MEDIA_ROOT, 'datasets', project+"_6dof"), ignore_errors=True)
         # Delete project object from 'Dataset' table, which will cause deletion of all connected objects
         dataset_instance.delete()
         return Response(f'The {project} was removed', status=status.HTTP_200_OK)
